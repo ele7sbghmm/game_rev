@@ -1,0 +1,8 @@
+[package]
+name = "mx_vs_atv_unleashed"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nom = "7.1.3"
+zune-inflate = "0.2.54"

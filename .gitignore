@@ -1,0 +1,11 @@
+_files/
+_ignore/
+
+# garbage
+.DS_Store
+.vscode
+
+# heavy
+target/
+node_modules/
+

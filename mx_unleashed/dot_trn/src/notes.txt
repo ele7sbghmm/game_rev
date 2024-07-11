@@ -1,0 +1,12 @@
+pointer to vertext before pointer to pointer to blocks =   0x435
+pointers to block offsets   1b6c38
+vertex block offsets
+1   1b703c
+2   1bd59d
+3   1c3afe
+4   1ca05f
+5   1d05c0
+6   1d6b21
+7   1dd082
+8   1e35e3
+9   1e9b44
