@@ -7,8 +7,8 @@
 //     int start;
 //     int size;
 // };
-// struct Dir parse_dir(FILE *f) {
-//     char path_len[4];
+// struct Dir parse_dir(FILE *fd) {
+//     int path_len = tag_int(fd);
 //     char path[256];
 //     int start, stop;
 //     memset(path, 0, sizeof path);
@@ -20,48 +20,37 @@
 // };
 
 void print_bytes(char *bytes) {
-    int len = sizeof bytes;
-    printf("%i\n", len);
-
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < sizeof bytes; i++) {
         printf("%u %x %c\n", i, bytes[i], bytes[i]);
     }
-}
+};
 void tag(FILE *f, char tag[], int len) {
     fgets(tag, len, f);
 };
-int tag_int(FILE *f) {
-    char bytes[8];
+int tag_int(FILE *fd) {
     int i;
+    char bytes[8];
+    memset(bytes, 0, sizeof bytes);
 
-    memset(bytes, 1, sizeof bytes);
-    tag(f, bytes, 5);
+    tag(fd, bytes, 4);
     print_bytes(bytes);
 
-    char array[4] = {'1', '2', '3', '4'};
-
-    sscanf(array, "%d", &i);
-
-    printf("%d", i);
-
-    return i;
+    return atoi(bytes);
 };
 
 int main() {
-    char *path = "../_files/types.hex";
+    char *path = "types.hex";
     FILE *f;
 
     f = fopen(path, "rb");
     if(f == NULL) {
-        printf("f == NULL\n\n");
+        printf("f == NULL\n");
         exit(-1); // return EXIT_FAILURE;
     }
 
     int i = tag_int(f);
-
-    // printf("%04x", i);
-    // printf("\n");
+    printf("i > %i", i);
 
     fclose(f);
     return 0;
-}
+};
