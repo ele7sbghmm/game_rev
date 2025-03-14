@@ -21,6 +21,7 @@ node_modules/
 # zig
 zig-out/
 zig-cache/
+.zig-cache/
 /build/
 /build-*/
 /docgen_tmp/
