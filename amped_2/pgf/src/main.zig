@@ -32,7 +32,16 @@ pub fn main() !void {
     try reader.skipBytes(pgfHeader.NumIndexBuffers * 0xc, .{});
     try reader.skipBytes(4, .{});
 
+    try reader.skipBytes(pgfHeader.PGDataSize, .{});
     try reader.skipBytes(pgfHeader.BVDataSize, .{});
+    try reader.skipBytes(pgfHeader.MiscDataSize, .{});
+    try reader.skipBytes(pgfHeader.InfluenceDataSize, .{});
+    try reader.skipBytes(pgfHeader.LIMDataSize, .{});
+    try reader.skipBytes(pgfHeader.CollisionDataSize, .{});
+    try reader.skipBytes(pgfHeader.StringTableSize, .{});
+    try reader.skipBytes(pgfHeader.NumPrimLists * 48, .{});
+    try reader.skipBytes(pgfHeader.NumVBGeomData * 48, .{});
+    // more data past this point but don't know what it is
 
     std.debug.print("{}", .{pgfHeader});
 }
