@@ -3,44 +3,93 @@
 //! is to delete this file and start with root.zig instead.
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    const path = "data/amped2_prototype_sep12/Levels/NZ1/NZ1_gfx/NZ1.pgf";
+    const file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    var bufreader = std.io.bufferedReader(file.reader());
+    var reader = bufreader.reader();
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    const version: f32 = @bitCast(try reader.readInt(u32, .little));
+    _ = version;
+    try reader.skipBytes(4, .{});
 
-    try bw.flush(); // Don't forget to flush!
+    const pgfSizes = try PgfSizes.read(reader);
+    try reader.skipBytes(4, .{});
+
+    try reader.skipBytes(pgfSizes.NumTextures * 0x14, .{});
+    try reader.skipBytes(pgfSizes.TextureDataSize, .{});
+    try reader.skipBytes(4, .{});
+
+    try reader.skipBytes(pgfSizes.ShaderDataSize, .{});
+    try reader.skipBytes(4, .{});
+
+    const pgfHeader = try PgfHeader.read(reader);
+    try reader.skipBytes(pgfHeader.VBDataSize, .{});
+    try reader.skipBytes(pgfHeader.NumVertexBuffers * 0xc, .{});
+
+    try reader.skipBytes(pgfHeader.IBDataSize, .{});
+    try reader.skipBytes(pgfHeader.NumIndexBuffers * 0xc, .{});
+    try reader.skipBytes(4, .{});
+
+    try reader.skipBytes(pgfHeader.BVDataSize, .{});
+
+    std.debug.print("{}", .{pgfHeader});
 }
+const PgfSizes = struct {
+    TotalFileSize: u32,
+    TotalDataSize: u32,
+    TextureDataSize: u32,
+    NumTextures: u32,
+    ShaderDataSize: u32,
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+    fn read(reader: anytype) !PgfSizes {
+        return PgfSizes{
+            .TotalFileSize = try reader.readInt(u32, .little),
+            .TotalDataSize = try reader.readInt(u32, .little),
+            .TextureDataSize = try reader.readInt(u32, .little),
+            .NumTextures = try reader.readInt(u32, .little),
+            .ShaderDataSize = try reader.readInt(u32, .little),
+        };
+    }
+};
+const PgfHeader = struct {
+    VBDataSize: u32,
+    IBDataSize: u32,
+    PGDataSize: u32,
+    BVDataSize: u32,
+    MiscDataSize: u32,
+    InfluenceDataSize: u32,
+    LIMDataSize: u32,
+    CollisionDataSize: u32,
+    StringTableSize: u32,
+    NumShaders: u32,
+    NumVertexBuffers: u32,
+    NumIndexBuffers: u32,
+    NumPushBuffers: u32,
+    NumPrimLists: u32,
+    NumVBGeomData: u32,
+    NumJoints: u32,
 
-test "use other module" {
-    try std.testing.expectEqual(@as(i32, 150), lib.add(100, 50));
-}
-
-test "fuzz example" {
-    const Context = struct {
-        fn testOne(context: @This(), input: []const u8) anyerror!void {
-            _ = context;
-            // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-            try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input));
-        }
-    };
-    try std.testing.fuzz(Context{}, Context.testOne, .{});
-}
-
+    fn read(reader: anytype) !PgfHeader {
+        return PgfHeader{
+            .VBDataSize = try reader.readInt(u32, .little),
+            .IBDataSize = try reader.readInt(u32, .little),
+            .PGDataSize = try reader.readInt(u32, .little),
+            .BVDataSize = try reader.readInt(u32, .little),
+            .MiscDataSize = try reader.readInt(u32, .little),
+            .InfluenceDataSize = try reader.readInt(u32, .little),
+            .LIMDataSize = try reader.readInt(u32, .little),
+            .CollisionDataSize = try reader.readInt(u32, .little),
+            .StringTableSize = try reader.readInt(u32, .little),
+            .NumShaders = try reader.readInt(u32, .little),
+            .NumVertexBuffers = try reader.readInt(u32, .little),
+            .NumIndexBuffers = try reader.readInt(u32, .little),
+            .NumPushBuffers = try reader.readInt(u32, .little),
+            .NumPrimLists = try reader.readInt(u32, .little),
+            .NumVBGeomData = try reader.readInt(u32, .little),
+            .NumJoints = try reader.readInt(u32, .little),
+        };
+    }
+};
 const std = @import("std");
-
-/// This imports the separate module containing `root.zig`. Take a look in `build.zig` for details.
-const lib = @import("pgf_lib");
