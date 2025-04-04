@@ -1,46 +1,66 @@
-//! By convention, main.zig is where your main function lives in the case that
-//! you are building an executable. If you are making a library, the convention
-//! is to delete this file and start with root.zig instead.
+const bc1Path = "/Users/im/Public/kod/mujhe/game_rev/amped_2/block_compression/data/bc1/splash_eng.xpr";
+const bc1Path2 = "/Users/im/Public/kod/mujhe/game_rev/amped_2/block_compression/data/bc1/m_puffer_generic_10.xpr";
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    const file = try std.fs.cwd().openFile(bc1Path, .{});
+    defer file.close();
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    var stream = std.io.bufferedReader(file.reader());
+    var reader = stream.reader();
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    const fourcc = try reader.readInt(u32, .little);
+    _ = fourcc;
+    const fileSize = try reader.readInt(u32, .little);
+    _ = fileSize;
+    const headerSize = try reader.readInt(u32, .little);
+    _ = headerSize;
+    const res0 = try reader.readInt(u32, .little);
+    _ = res0;
+    const res1 = try reader.readInt(u32, .little);
+    _ = res1;
+    const res2 = try reader.readInt(u32, .little);
+    _ = res2;
+    const res3 = try reader.readInt(u32, .little);
+    _ = res3;
+    const res4 = try reader.readInt(u32, .little);
+    _ = res4;
 
-    try bw.flush(); // Don't forget to flush!
-}
+    const allocator = std.heap.page_allocator;
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+    const y_start = 0; //280 / 4
+    var ppm = try ppm3.Ppm3.init(allocator, 0x80 * 4, (0x80 - y_start) * 4 - 1, 255);
+    defer ppm.deinit();
+    var table = [4][4]bc1.RGBA8888{ undefined, undefined, undefined, undefined };
+    var row = [4]bc1.RGBA8888{ undefined, undefined, undefined, undefined };
 
-test "use other module" {
-    try std.testing.expectEqual(@as(i32, 150), lib.add(100, 50));
-}
-
-test "fuzz example" {
-    const Context = struct {
-        fn testOne(context: @This(), input: []const u8) anyerror!void {
-            _ = context;
-            // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-            try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input));
+    var blocks: [0x80 * 0x80]bc1.BC1 = undefined;
+    for (0..0x80 * 0x80) |i| {
+        blocks[i] = try bc1.BC1.parse(reader);
+    }
+    for (y_start..0x80) |y| {
+        for (0..4) |y2| {
+            for (0..0x80) |x| {
+                table = try blocks[y * 0x80 + x].toRGBATable();
+                row = table[y2];
+                for (0..4) |x2| {
+                    try ppm.pixels.append(row[x2].r * 8);
+                    try ppm.pixels.append(row[x2].g * 4);
+                    try ppm.pixels.append(row[x2].b * 8);
+                }
+            }
         }
-    };
-    try std.testing.fuzz(Context{}, Context.testOne, .{});
+    }
+    const ppm_str = try ppm.format();
+    defer allocator.free(ppm_str);
+
+    const output_path = "output.ppm";
+    const output_file = try std.fs.cwd().createFile(output_path, .{});
+    defer output_file.close();
+
+    try output_file.writeAll(ppm_str);
+    std.debug.print("PPM फ़ाइल सफलतापूर्वक लिखी गई: {s}\n", .{output_path});
 }
 
 const std = @import("std");
-
-/// This imports the separate module containing `root.zig`. Take a look in `build.zig` for details.
-const lib = @import("block_compression_lib");
+const bc1 = @import("bc.zig");
+const ppm3 = @import("ppm.zig");

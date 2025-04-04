@@ -10,10 +10,6 @@ pub fn main() !void {
     var bufreader = std.io.bufferedReader(file.reader());
     var reader = bufreader.reader();
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
     const version: f32 = @bitCast(try reader.readInt(u32, .little));
     _ = version;
     try reader.skipBytes(4, .{});
