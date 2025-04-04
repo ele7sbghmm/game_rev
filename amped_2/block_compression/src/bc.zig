@@ -96,6 +96,20 @@ pub const BC1 = struct {
         const c3 = try std.fmt.allocPrint(allocator, "{d} {d} {d}", .{ row[3].r, row[3].g, row[3].b });
         return try std.fmt.allocPrint(allocator, "{s} {s} {s} {s} ", .{ c0, c1, c2, c3 });
     }
+    pub fn parseUntilEOF(allocator: std.mem.Allocator, reader: anytype) !std.ArrayList(BC1) {
+        var blocks = std.ArrayList(BC1).init(allocator);
+        errdefer blocks.deinit();
+
+        while (true) {
+            const block = BC1.parse(reader) catch |err| {
+                if (err == error.EndOfStream) break;
+                return err;
+            };
+            try blocks.append(block);
+        }
+
+        return blocks;
+    }
 };
 
 const std = @import("std");

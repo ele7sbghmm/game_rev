@@ -28,6 +28,8 @@ pub const Ppm3 = struct {
             try result.appendSlice(std.fmt.allocPrint(self.allocator, "{d}", .{item}) catch return error.OutOfMemory);
         }
 
+        try result.append(' ');
+
         return result.toOwnedSlice();
     }
     pub fn fillPixels(self: Ppm3, rgbaArray: []bc1.RGBA8888) void {
