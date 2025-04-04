@@ -1,14 +1,11 @@
 #
-.DS_Store
+*.ppm
+*.xpr
+/data
+
+#
 *.swp
 *.swc
-Thumbs.db
-
-/release/
-/debug/
-
-_files/
-_ignore/
 
 # garbage
 .DS_Store
@@ -17,6 +14,10 @@ _ignore/
 # heavy
 target/
 node_modules/
+
+# rust
+/release/
+/debug/
 
 # zig
 zig-out/
