@@ -32,7 +32,7 @@ pub const Ppm3 = struct {
 
         return result.toOwnedSlice();
     }
-    pub fn fillPixels(self: Ppm3, rgbaArray: []bc1.RGBA8888) void {
+    pub fn fillPixels(self: Ppm3, rgbaArray: []bc.RGBA8888) void {
         self.pixels = try self.allocator.alloc(u8, rgbaArray.len * 3);
         for (0..rgbaArray.len) |i| {
             self.pixels[i * 3 + 0] = rgbaArray[i].r * 8;
@@ -41,6 +41,51 @@ pub const Ppm3 = struct {
         }
     }
 };
+const TUPLTYPE = enum {
+    RGB_ALPHA,
+    RGB,
+    GRAYSCALE,
+    pub fn toString(self: TUPLTYPE) []const u8 {
+        return switch (self) {
+            .RGB_ALPHA => "RGB_ALPHA",
+            .RGB => "RGB",
+            .GRAYSCALE => "GRAYSCALE",
+        };
+    }
+};
+pub const Ppm7 = struct {
+    allocator: std.mem.Allocator,
+    width: u32,
+    height: u32,
+    depth: u32 = 4,
+    max_val: u32 = 255,
+    typltype: TUPLTYPE = .RGB_ALPHA,
+    pixels: std.ArrayList(u32),
+    pub fn init(allocator: std.mem.Allocator, width: u32, height: u32) !Ppm7 {
+        // const pixels = try allocator.alloc(u8, width * height * 3);
+        const pixels = std.ArrayList(u32).init(allocator);
+        return Ppm7{ .allocator = allocator, .width = width, .height = height, .pixels = pixels };
+    }
+    pub fn deinit(self: Ppm7) void {
+        self.pixels.deinit();
+    }
+    pub fn formatHeader(self: Ppm7) ![]u8 {
+        var result = std.ArrayList(u8).init(self.allocator);
+        defer result.deinit();
+
+        try result.appendSlice("P7\nWIDTH {d}\nHEIGHT {d}\nDEPTH {d}\nMAXVAL {d}\nTUPLTYPE {s}\nENDHDR\n", .{ self.width, self.height, self.depth, self.max_val, self.typltype.toString() });
+
+        return result.toOwnedSlice();
+    }
+    pub fn fillPixels(self: Ppm7, rgbaArray: []bc.RGBA8888) void {
+        self.pixels = try self.allocator.alloc(u32, rgbaArray.len);
+
+        for (0..rgbaArray.len / 4) |i| {
+            self.pixels[i] =
+                rgbaArray[i].r * 8 << 0 | rgbaArray[i].g * 4 << 8 | rgbaArray[i].b * 8 << 16 | rgbaArray[i].a * 16 << 24;
+        }
+    }
+};
 
 const std = @import("std");
-const bc1 = @import("bc.zig");
+const bc = @import("bc.zig");
