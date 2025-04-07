@@ -7,7 +7,7 @@ const bc2Path2 = "/Users/im/Public/kod/mujhe/game_rev/amped_2/block_compression/
 const bc2Path3 = "/Users/im/Public/kod/mujhe/game_rev/amped_2/block_compression/data/bc2/NZ1_LevelPict.xpr";
 
 pub fn main() !void {
-    const input = bc2Path3;
+    const input = bc1Path2;
     const file = try std.fs.cwd().openFile(input, .{});
     defer file.close();
 
@@ -18,22 +18,25 @@ pub fn main() !void {
     _ = fourcc;
     const fileSize = try reader.readInt(u32, .little);
     const headerSize = try reader.readInt(u32, .little);
-    const res0 = try reader.readInt(u32, .little);
-    _ = res0;
-    const res1 = try reader.readInt(u32, .little);
-    _ = res1;
-    const res2 = try reader.readInt(u32, .little);
-    _ = res2;
-    const res3 = try reader.readInt(u32, .little);
-    _ = res3;
-    const res4 = try reader.readInt(u32, .little);
-    _ = res4;
+    const common = try reader.readInt(u32, .little);
+    _ = common;
+    const data = try reader.readInt(u32, .little);
+    _ = data;
+    const lock = try reader.readInt(u32, .little);
+    _ = lock;
+    const format = try reader.readInt(u32, .little);
+    _ = format;
+    const size = try reader.readInt(u32, .little);
 
     const allocator = std.heap.page_allocator;
 
     const width = 128;
     // const height = 32;
-    const height = (fileSize - headerSize) / 16 / width;
+    const height = if (size != 0) {
+        size / 16;
+    } else {
+        (fileSize - headerSize) / 16 / width;
+    };
     const y_start = 0; //280 / 4
 
     var ppm_file = try ppm.Ppm7.init(allocator, width * 4, height * 4);
@@ -42,7 +45,7 @@ pub fn main() !void {
     var table = [4][4]bc.RGBA8888{ undefined, undefined, undefined, undefined };
     var row = [4]bc.RGBA8888{ undefined, undefined, undefined, undefined };
 
-    const blocks = try bc.BC2.parseUntilEOF(allocator, reader);
+    const blocks = try bc.BC1.parseUntilEOF(allocator, reader);
     defer blocks.deinit();
 
     for (y_start..height) |y| {
