@@ -5,7 +5,6 @@ pub const Ppm3 = struct {
     max_val: u32,
     pixels: std.ArrayList(u8),
     pub fn init(allocator: std.mem.Allocator, width: u32, height: u32, max_val: u32) !Ppm3 {
-        // const pixels = try allocator.alloc(u8, width * height * 3);
         const pixels = std.ArrayList(u8).init(allocator);
         return Ppm3{ .allocator = allocator, .width = width, .height = height, .max_val = max_val, .pixels = pixels };
     }
@@ -21,18 +20,18 @@ pub const Ppm3 = struct {
         defer result.deinit();
 
         try result.appendSlice("P3\n");
-        try result.appendSlice(std.fmt.allocPrint(self.allocator, "{d} {d}\n{d}\n", .{ self.width, self.height, self.max_val }) catch return error.OutOfMemory);
+        try result.appendSlice(try std.fmt.allocPrint(self.allocator, "{d} {d}\n{d}\n", .{ self.width, self.height, self.max_val }) catch return error.OutOfMemory);
 
         for (self.pixels.items, 0..) |item, i| {
             if (i > 0) try result.append(' ');
-            try result.appendSlice(std.fmt.allocPrint(self.allocator, "{d}", .{item}) catch return error.OutOfMemory);
+            try result.appendSlice(try std.fmt.allocPrint(self.allocator, "{d}", .{item}) catch return error.OutOfMemory);
         }
 
         try result.append(' ');
 
         return result.toOwnedSlice();
     }
-    pub fn fillPixels(self: Ppm3, rgbaArray: []bc.RGBA8888) void {
+    pub fn fillPixels(self: Ppm3, rgbaArray: []bc.R8G8B8A8) void {
         self.pixels = try self.allocator.alloc(u8, rgbaArray.len * 3);
         for (0..rgbaArray.len) |i| {
             self.pixels[i * 3 + 0] = rgbaArray[i].r * 8;
@@ -73,17 +72,19 @@ pub const Ppm7 = struct {
         var result = std.ArrayList(u8).init(self.allocator);
         defer result.deinit();
 
-        try result.appendSlice("P7\nWIDTH {d}\nHEIGHT {d}\nDEPTH {d}\nMAXVAL {d}\nTUPLTYPE {s}\nENDHDR\n", .{ self.width, self.height, self.depth, self.max_val, self.typltype.toString() });
+        try result.appendSlice(try std.fmt.allocPrint(self.allocator, "P7\nWIDTH {d}\nHEIGHT {d}\nDEPTH {d}\nMAXVAL {d}\nTUPLTYPE {s}\nENDHDR\n", .{ self.width, self.height, self.depth, self.max_val, self.typltype.toString() }));
 
         return result.toOwnedSlice();
     }
-    pub fn fillPixels(self: Ppm7, rgbaArray: []bc.RGBA8888) void {
-        self.pixels = try self.allocator.alloc(u32, rgbaArray.len);
+    pub fn write(self: Ppm7, path: []const u8, pixels: std.ArrayList(u8)) !void {
+        const output_filename = std.fmt.allocPrint(self.allocator, "/Users/im/Public/kod/mujhe/game_rev/amped_2/block_compression/data/ppm/{s}.ppm", .{path}) catch return error.OutOfMemory;
+        defer self.allocator.free(output_filename);
 
-        for (0..rgbaArray.len / 4) |i| {
-            self.pixels[i] =
-                rgbaArray[i].r * 8 << 0 | rgbaArray[i].g * 4 << 8 | rgbaArray[i].b * 8 << 16 | rgbaArray[i].a * 16 << 24;
-        }
+        const output_file = try std.fs.cwd().createFile(output_filename, .{});
+        defer output_file.close();
+
+        try output_file.writeAll(try self.formatHeader());
+        try output_file.writeAll(pixels.items);
     }
 };
 
