@@ -1,7 +1,19 @@
 #
 *.ppm
 *.xpr
-/data
+data/
+
+# editor
+.cursor/
+.vscode/
+*.swp
+*.swo
+*.swn
+.log
+
+# env
+.env
+*.env
 
 #
 *.swp
@@ -27,3 +39,15 @@ zig-cache/
 /build-*/
 /docgen_tmp/
 
+# go
+go.work
+/bin/
+/pkg/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylb
+*.test
+*.out
+vendor/
