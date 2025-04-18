@@ -10,7 +10,7 @@ pub const RGB565 = packed struct {
             .b = @intCast(raw >> 0 & 0b0001_1111),
         };
     }
-    pub fn format(self: RGB565, allocator: std.mem.allocator) void {
+    pub fn fmt(self: RGB565, allocator: std.mem.Allocator) void {
         return std.fmt.allocPrint(allocator, ".r {d} .g {d} .b {d}\n", .{ self.r, self.g, self.b });
     }
     pub fn toR8G8B8A8(self: RGB565) R8G8B8A8 {
@@ -36,7 +36,7 @@ pub const A1R5G5B5 = packed struct {
             .b = @as(u5, raw >> 0 & 0b0001_1111),
         };
     }
-    pub fn format(self: A1R5G5B5, allocator: std.mem.allocator) void {
+    pub fn fmt(self: A1R5G5B5, allocator: std.mem.Allocator) void {
         return std.fmt.allocPrint(allocator, ".a {d} .r {d} .g {d} .b {d}\n", .{ self.a, self.r, self.g, self.b });
     }
     pub fn toR8G8B8A8(self: A1R5G5B5) R8G8B8A8 {
@@ -179,7 +179,7 @@ pub const R8G8B8A8 = packed struct {
     g: u8,
     b: u8,
     a: u8,
-    pub fn format(self: R8G8B8A8, allocator: std.mem.Allocator) ![]u8 {
+    pub fn fmt(self: R8G8B8A8, allocator: std.mem.Allocator) ![]u8 {
         return try std.fmt.allocPrint(allocator, "{d} {d} {d} {d}", .{ self.r, self.g, self.b, self.a });
     }
     pub fn packU32(self: R8G8B8A8) u32 {
@@ -232,41 +232,67 @@ pub fn parsePgfXpr(allocator: std.mem.Allocator, file: std.fs.File) !void {
     const reader = bufreader.reader();
     const seeker = file.seekableStream();
 
-    _ = try reader.readInt(u32, .little);
-    _ = try reader.readInt(u32, .little);
+    _ = try reader.readInt(u32, .little); // version
+    _ = try reader.readInt(u32, .little); // -
     const sizes = try xpr.PgfSizes.parse(reader);
     _ = try reader.readInt(u32, .little);
 
-    const xpr0 = try xpr.XprTexture.parse(reader);
-    const h = xpr0.format.height;
-    const w = xpr0.format.width;
-
+    var textureResources = std.ArrayList(xpr.XprTexture).init(allocator);
+    defer textureResources.deinit();
     const textureDataOffset = sizes.numTextures * 0x14 + 0x20;
-    _ = try seeker.seekTo(textureDataOffset);
+
+    // for (0..sizes.numTextures) |_| {
+    //     try textureResources.append(try xpr.XprTexture.parse(reader));
+    // }
+    // for (textureResources.items) |res| {
+    const res = try xpr.XprTexture.parse(reader);
+    std.debug.print("{any}\n", .{res});
+    const h: u32 = @intCast(res.format.height);
+    const w: u32 = @intCast(res.format.width);
+
+    const offset = textureDataOffset + res.data;
+    _ = try seeker.seekTo(offset);
+    std.debug.print("offset 0x{x}\n", .{offset});
 
     var bc1array = std.ArrayList(BC1).init(allocator);
     defer bc1array.deinit();
-    for (0..h * w / 2) |_| {
-        try bc1array.append(try BC1.parse(reader));
+    std.debug.print("h {x}\nw {x}\n", .{ h, w });
+    std.debug.print("h * w / 16 = {d} {x}\n", .{ h * w / 16, h * w / 16 });
+    for (0..0x3f5) |_| {
+        _ = try reader.readInt(u32, .big);
+    }
+    for (0..h * w / 2 / 8 - 0x400) |_| {
+        const btex = try BC1.parse(reader);
+        try bc1array.append(btex);
     }
 
     var pixels = std.ArrayList(u8).init(allocator);
+    var r: u8 = undefined;
+    var g: u8 = undefined;
+    var b: u8 = undefined;
+    var a: u8 = undefined;
     defer pixels.deinit();
-    for (0..h / 4) |Y| {
+
+    for (0..h / 4 - 8) |Y| {
         for (0..4) |y| {
             for (0..w / 4) |X| {
-                const p = try bc1array.items[(Y * w / 4) + X].toPixel4x4();
-                for (p[y]) |pixel| {
-                    try pixels.append(pixel.r);
-                    try pixels.append(pixel.g);
-                    try pixels.append(pixel.b);
-                    try pixels.append(pixel.a);
+                const table = try bc1array.items[(Y * w / 4 + X)].toPixel4x4();
+                for (0..4) |x| {
+                    r = @intCast(table[y][x].r);
+                    g = @intCast(table[y][x].g);
+                    b = @intCast(table[y][x].b);
+                    a = table[y][x].a;
+                    try pixels.append(r);
+                    try pixels.append(g);
+                    try pixels.append(b);
+                    try pixels.append(a);
                 }
             }
         }
     }
     const img = try ppm.Ppm7.init(allocator, w, h);
-    try img.write("nz1_xpr0", pixels);
+    const name = try std.fmt.allocPrint(allocator, "nz1_xpr0", .{});
+    try img.write(name, pixels);
 }
 
 const std = @import("std");

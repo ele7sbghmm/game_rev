@@ -15,7 +15,7 @@ pub const Ppm3 = struct {
         std.debug.print("P3\n{d} {d}\n{d}\n", .{ self.width, self.height, self.max_val });
         std.debug.print("{any}\n", .{self.pixels.items});
     }
-    pub fn format(self: Ppm3) ![]u8 {
+    pub fn fmt(self: Ppm3) ![]u8 {
         var result = std.ArrayList(u8).init(self.allocator);
         defer result.deinit();
 
@@ -68,7 +68,7 @@ pub const Ppm7 = struct {
     pub fn deinit(self: Ppm7) void {
         self.pixels.deinit();
     }
-    pub fn formatHeader(self: Ppm7) ![]u8 {
+    pub fn fmtHeader(self: Ppm7) ![]u8 {
         var result = std.ArrayList(u8).init(self.allocator);
         defer result.deinit();
 
@@ -83,7 +83,7 @@ pub const Ppm7 = struct {
         const output_file = try std.fs.cwd().createFile(output_filename, .{});
         defer output_file.close();
 
-        try output_file.writeAll(try self.formatHeader());
+        try output_file.writeAll(try self.fmtHeader());
         try output_file.writeAll(pixels.items);
     }
 };
