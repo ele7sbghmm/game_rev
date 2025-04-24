@@ -4,11 +4,15 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 )
 
 func main() {
-	path := "data/NZ1.pgf"
+	pgfPath := os.Args[1]
+
+	path := fmt.Sprintf("../../../noclip.website/data/amped2_prototype_sep12/%s", pgfPath)
+	fmt.Println(path)
 
 	file, _ := os.Open(path)
 	defer file.Close()
@@ -31,19 +35,15 @@ func main() {
 	for i, res := range resources {
 		file.Seek(int64(textureDataOffset+res.Data), io.SeekStart)
 		var ppm PPM7
-		ppm.name = fmt.Sprintf("ppm/%03x.ppm", i)
+
+		os.MkdirAll(fmt.Sprintf("ppm/%s", pgfPath), fs.ModePerm)
+		ppm.name = fmt.Sprintf("ppm/%s/%02x", pgfPath, i)
 		ppm.FromFormat(file, res.Format)
 
-		fmt.Printf("%d w%d h%d done", i, ppm.width, ppm.height)
 		if ppm.packed == nil {
 			continue
 		}
 
 		ppm.WriteToFile()
 	}
-
-	str := "workin'"
-
-	fmt.Println(str)
-	fmt.Println(sizes.NumTextures)
 }

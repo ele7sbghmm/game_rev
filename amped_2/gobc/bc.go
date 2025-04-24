@@ -161,7 +161,68 @@ func (b *BC2) ToQuadPixel() QuadPixel {
 	var qp QuadPixel
 	for i := range qp {
 		qp[i] = colorTable[b.bc1.lookupTable[i]]
-		qp[i].a = b.alphaTable[i]
+		qp[i].a = b.alphaTable[i] * 0xf
+	}
+	return qp
+}
+
+type BC3 struct {
+	alphaTable       [8]uint8
+	alphaLookupTable [16]uint8
+	bc1              BC1
+}
+
+func (bc3 *BC3) Parse(file io.Reader) {
+	var packed uint64
+	binary.Read(file, binary.LittleEndian, &packed)
+
+	bc3.alphaTable[0] = uint8(packed & 0xff)
+	packed >>= 8
+	bc3.alphaTable[1] = uint8(packed & 0xff)
+	packed >>= 8
+
+	if bc3.alphaTable[0] > bc3.alphaTable[1] {
+		for i := uint32(1); i < 7; i++ {
+			a0 := uint32(bc3.alphaTable[0])
+			a0 *= 7 - i
+			a0 /= 7
+
+			a1 := uint32(bc3.alphaTable[1])
+			a1 *= i / 7
+
+			bc3.alphaTable[i] = uint8(a0 + a1)
+		}
+	} else {
+		bc3.alphaTable[6] = 0
+		bc3.alphaTable[7] = 255
+
+		for i := uint32(1); i < 5; i++ {
+			a0 := uint32(bc3.alphaTable[0])
+			a0 *= 5 - i
+			a0 /= 5
+
+			a1 := uint32(bc3.alphaTable[1])
+			a1 *= i / 5
+
+			bc3.alphaTable[i] = uint8(a0 + a1)
+		}
+	}
+
+	for i := range len(bc3.alphaLookupTable) {
+		bc3.alphaLookupTable[i] = uint8(packed & 0b111)
+		packed >>= 3
+	}
+
+	bc3.bc1.Parse(file)
+}
+
+var a uint32
+
+func (bc3 *BC3) ToQuadPixel() QuadPixel {
+	qp := bc3.bc1.ToQuadPixel()
+	for i, p := range qp {
+		a := uint32(bc3.alphaTable[bc3.alphaLookupTable[i]]) * 0x24
+		p.a = uint8(a)
 	}
 	return qp
 }
