@@ -10,8 +10,9 @@ import (
 
 func main() {
 	pgfPath := os.Args[1]
+	outPath := os.Args[2]
 
-	path := fmt.Sprintf("../../../noclip.website/data/amped2_prototype_sep12/%s", pgfPath)
+	path := fmt.Sprintf("%s", pgfPath)
 	fmt.Println(path)
 
 	file, _ := os.Open(path)
@@ -37,7 +38,7 @@ func main() {
 		var ppm PPM7
 
 		os.MkdirAll(fmt.Sprintf("ppm/%s", pgfPath), fs.ModePerm)
-		ppm.name = fmt.Sprintf("ppm/%s/%02x", pgfPath, i)
+		ppm.name = fmt.Sprintf("ppm/%s/%02x", outPath, i)
 		ppm.FromFormat(file, res.Format)
 
 		if ppm.packed == nil {
