@@ -20,9 +20,9 @@ func readFence(c *ChunkHandler, buffer *bytes.Buffer) {
 		binary.Read(c.r, binary.LittleEndian, &n)
 
 		h, l := make([]byte, 4), make([]byte, 4)
-		binary.LittleEndian.PutUint32(l, math.Float32bits(float32(-1.0)))
-		binary.LittleEndian.PutUint32(h, math.Float32bits(float32(1.0)))
-		color := [4]byte{0, 0xff, 0, 0xff}
+		binary.LittleEndian.PutUint32(l, math.Float32bits(float32(-10.0)))
+		binary.LittleEndian.PutUint32(h, math.Float32bits(float32(10.0)))
+		color := [4]byte{255, 0, 0, 255}
 
 		p0 := bytes.Join([][]byte{sx[:], h[:], sz[:], n[:], color[:]}, []byte{})
 		p1 := bytes.Join([][]byte{sx[:], l[:], sz[:], n[:], color[:]}, []byte{})
