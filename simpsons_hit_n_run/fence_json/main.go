@@ -118,7 +118,13 @@ func main() {
 
 	fmt.Println(jsonStr)
 
-	fences := p3d("/tmp/L2_TERRA.p3d")
-	writeJson("/tmp/json.json", fences)
+	for l := 1; l < 8; l++ {
+		for r := 1; r < 4; r++ {
+			pathIn := fmt.Sprintf("/tmp/art/l%d_sr%dp.p3d", l, r)
+			pathOut := fmt.Sprintf("/tmp/%d%d.json", l, r)
+			fences := p3d(pathIn)
+			writeJson(pathOut, fences)
+		}
+	}
 
 }
