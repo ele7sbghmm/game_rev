@@ -20,6 +20,14 @@ type Fence struct {
 	Normal Vec3 `json:"normal"`
 }
 
+type Level struct {
+	LevelId uint    `json:"levelid"`
+	Terra   []Fence `json:"terra"`
+	Race1   []Fence `json:"race1"`
+	Race2   []Fence `json:"race2"`
+	Race3   []Fence `json:"race3"`
+}
+
 func p3d(path string) []Fence {
 	fences := make([]Fence, 0, 10_000)
 
@@ -100,31 +108,29 @@ func writeJson(path string, data interface{}) error {
 }
 
 func main() {
-	start := Vec3{X: 3., Y: -2., Z: 12.}
-	start2 := Vec3{X: 1000., Y: -1000., Z: 12000.}
-	end := Vec3{X: 30., Y: -20., Z: 120.}
-	normal := Vec3{X: 1., Y: -0., Z: 0.}
-	f := []Fence{
-		{Start: start, End: end, Normal: normal},
-		{Start: start2, End: end, Normal: normal},
-	}
-
-	jsonBytes, err := json.Marshal(f)
-	if err != nil {
-		panic(err)
-	}
-
-	jsonStr := string(jsonBytes)
-
-	fmt.Println(jsonStr)
-
+	levels := []Level{}
 	for l := 1; l < 8; l++ {
-		for r := 1; r < 4; r++ {
-			pathIn := fmt.Sprintf("/tmp/art/l%d_sr%dp.p3d", l, r)
-			pathOut := fmt.Sprintf("/tmp/%d%d.json", l, r)
-			fences := p3d(pathIn)
-			writeJson(pathOut, fences)
+		level := Level{
+			LevelId: uint(l),
+			Terra:   []Fence{},
+			Race1:   []Fence{},
+			Race2:   []Fence{},
+			Race3:   []Fence{},
 		}
+
+		pathT := fmt.Sprintf("/tmp/art/l%d_terra.p3d", l)
+		pathR1 := fmt.Sprintf("/tmp/art/l%d_sr1p.p3d", l)
+		pathR2 := fmt.Sprintf("/tmp/art/l%d_sr2p.p3d", l)
+		pathR3 := fmt.Sprintf("/tmp/art/l%d_sr3p.p3d", l)
+
+		level.Terra = p3d(pathT)
+		level.Race1 = p3d(pathR1)
+		level.Race2 = p3d(pathR2)
+		level.Race3 = p3d(pathR3)
+
+		levels = append(levels, level)
 	}
 
+	pathOut := "/tmp/fences.json"
+	writeJson(pathOut, levels)
 }
