@@ -21,11 +21,10 @@ type Fence struct {
 }
 
 type Level struct {
-	LevelId uint    `json:"levelid"`
-	Terra   []Fence `json:"terra"`
-	Race1   []Fence `json:"race1"`
-	Race2   []Fence `json:"race2"`
-	Race3   []Fence `json:"race3"`
+	Terra []Fence `json:"terra"`
+	Race1 []Fence `json:"race1"`
+	Race2 []Fence `json:"race2"`
+	Race3 []Fence `json:"race3"`
 }
 
 func p3d(path string) []Fence {
@@ -111,11 +110,10 @@ func main() {
 	levels := []Level{}
 	for l := 1; l < 8; l++ {
 		level := Level{
-			LevelId: uint(l),
-			Terra:   []Fence{},
-			Race1:   []Fence{},
-			Race2:   []Fence{},
-			Race3:   []Fence{},
+			Terra: []Fence{},
+			Race1: []Fence{},
+			Race2: []Fence{},
+			Race3: []Fence{},
 		}
 
 		pathT := fmt.Sprintf("/tmp/art/l%d_terra.p3d", l)
